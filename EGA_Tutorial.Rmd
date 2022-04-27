@@ -1,0 +1,76 @@
+---
+title: "Exploratory Graph Analysis"
+author: "Daniel van der Meer, Fridtjof Petersen, Jonas Petter"
+date: "4/26/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+## Introduction to exploratory graph analysis
+
+This markdown document illustrates how to apply exploratory graph analysis (EGA) using R. EGA was proposed as an alternative 
+to common methods of exploratory factor analysis. EGA is based on the insight that latent variables are reflected as clusters in network models. 
+
+## The dataset 
+```{r}
+library(lavaan)
+data <- HolzingerSwineford1939[7:15]
+```
+
+In this example, we will use the data set from Holzinger and Swineford (1939), which comes with the R package *lavaan*. The researchers measured 300 students on their cognitive abilities, using a 9-item-questionnaire. These 9 items are assumed to correspond to visual, verbal and speed abilities. This 3 factor structure is indeed known to achieve a high fit with the data set. Thus, we hope to recover this 3 factor structure using EGA.
+
+## Applying exploratory graph analysis step-by-step
+
+The following code is adapted from Golino and Epskamp (2017).
+
+Since EGA investigates clusters in network models, we first need to create a network model of the data. For this we need to get the correlation matrix of the 9 items. This is easily achieve with the *cor_auto* function from *qgraph*.
+
+```{r}
+library(qgraph)
+correlation_matrix <- cor_auto(data)
+```
+
+Then, we can estimate the Gaussian graphical model, a network model, using the graphical lasso method. For this, we can use the *EBICglasso* function from *qgraph*.
+
+```{r}
+glasso <- EBICglasso(S=correlation_matrix, n = nrow(data))
+```
+
+Let us take a look at our estimated network model, using the qgraph function.
+
+```{r}
+networkGraph <- qgraph(glasso, layout = "spring", vsize = 6)
+```
+
+We can already see that the clusters in this network model correspond to our assumed factor structure. But to verify this mathematically, we need to take a few more steps. To obtain clusters from a network, EGA uses the walktrap algorithm. This algorithm is implemented in the *igraph* package. To use it, we need to convert our network model to the igraph notation and then use the *walktrap.community* function.
+
+```{r}
+library(igraph)
+igraph <- as.igraph(networkGraph)
+walktrapResults <- walktrap.community(igraph)
+walktrapResults
+```
+
+The results tell us that there were indeed 3 clusters. This corresponds to a 3 factor structure, as expected. Factor 1 loads onto items 7, 8 and 9. Factor 2 loads onto items 1, 2 and 3. Factor 3 loads onto items 4, 5 and 6. This is in line with the proposed factor structure of visual, verbal and speed abilities. Finally, let us visualize the clusters using *qgraph*.
+
+```{r}
+qgraph(glasso, layout = "spring", vsize = 6, groups = as.factor(walktrapResults$membership))
+```
+
+
+## Packages for exploratory graph analysis
+
+Fortunately, it is not necessary to go through all of the steps of EGA manually. Golino et al. have authored the R package *EGAnet*, which implements the EGA framework in a single function. This function gives us the same output as in the previous section, but with much less code. 
+
+```{r}
+library(EGAnet)
+EGAnet::EGA(data, model = "glasso", plot.EGA = TRUE)
+```
+
+
+## Comparison with other methods
+
+
