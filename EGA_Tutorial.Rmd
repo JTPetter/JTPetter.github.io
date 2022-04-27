@@ -2,7 +2,10 @@
 title: "Exploratory Graph Analysis"
 author: "Daniel van der Meer, Fridtjof Petersen, Jonas Petter"
 date: "4/26/2022"
-output: html_document
+output: 
+  html_document:
+    toc: true
+    toc_float: true
 ---
 
 ```{r setup, include=FALSE}
@@ -12,7 +15,7 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 ## Introduction to exploratory graph analysis
 
 This markdown document illustrates how to apply exploratory graph analysis (EGA) using R. EGA was proposed as an alternative 
-to common methods of exploratory factor analysis. EGA is based on the insight that latent variables are reflected as clusters in network models. 
+to common methods of exploratory factor analysis. EGA is based on the insight that latent variables are reflected as clusters in network models. **TODO: longer introduction**
 
 ## The dataset 
 ```{r}
@@ -73,4 +76,20 @@ EGAnet::EGA(data, model = "glasso", plot.EGA = TRUE)
 
 ## Comparison with other methods
 
+Alternatively, we can look at the scree plot and eigenvalues to determine the number of factors. For this we can use the *scree* function from the *psych* package.
+
+```{r}
+library(psych)
+scree(data, pc = FALSE)
+```
+
+The Kaiser criterion recommends to drop all factors with an eigenvalue < 1. From this analysis we would thus conclude that a 1-factor structure is appropriate for the data. **TODO: Maybe some interpretation on why this differs**
+
+## References
+
+Golino, H. F., & Epskamp, S. (2017). Exploratory graph analysis: A new approach for estimating the number of dimensions in             psychological research. *PLOS ONE, 12*(6), e0174035. doi:10.1371/journal.pone.0174035
+
+Golino, H., & Christensen, A. P. (2021). EGAnet: Exploratory Graph Analysis – A framework for estimating the number
+  of dimensions in multivariate data using network psychometrics. R package version 0.9.9.
+  
 
