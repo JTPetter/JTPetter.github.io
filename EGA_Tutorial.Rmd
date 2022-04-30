@@ -14,8 +14,15 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 
 ## Introduction to exploratory graph analysis
 
-This markdown document illustrates how to apply exploratory graph analysis (EGA) using R. EGA was proposed as an alternative 
-to common methods of exploratory factor analysis. EGA is based on the insight that latent variables are reflected as clusters in network models. **TODO: longer introduction**
+This tutorial illustrates how to apply exploratory graph analysis (EGA) using R. EGA was proposed by Golino and Epskamp (2017) as an alternative to common methods of exploratory factor analysis (EFA). EGA is based on the insight that latent variables are reflected as clusters in network models. Broadly speaking, EGA consists of three steps: 
+
+1) Estimate the correlation matrix.
+
+2) Construct a network graph from the correlation matrix.
+
+3) Identify clusters in the network graph.
+
+This tutorial will illustrate how to apply these steps in practice and then draw a short comparison to other methods of EFA.
 
 ## The dataset 
 ```{r}
@@ -29,14 +36,14 @@ In this example, we will use the data set from Holzinger and Swineford (1939), w
 
 The following code is adapted from Golino and Epskamp (2017).
 
-Since EGA investigates clusters in network models, we first need to create a network model of the data. For this we need to get the correlation matrix of the 9 items. This is easily achieve with the *cor_auto* function from *qgraph*.
+Since EGA investigates clusters in network models, we need to create a network model of the data. For this we first need to get the correlation matrix of the 9 items. This is easily achieved with the *cor_auto* function from *qgraph*.
 
 ```{r}
 library(qgraph)
 correlation_matrix <- cor_auto(data)
 ```
 
-Then, we can estimate the Gaussian graphical model, a network model, using the graphical lasso method. For this, we can use the *EBICglasso* function from *qgraph*.
+Then, we can estimate the Gaussian graphical model, a network model, using the graphical lasso (GLASSO) method. For this, we can use the *EBICglasso* function from *qgraph*.
 
 ```{r}
 glasso <- EBICglasso(S=correlation_matrix, n = nrow(data))
@@ -76,14 +83,27 @@ EGAnet::EGA(data, model = "glasso", plot.EGA = TRUE)
 
 ## Comparison with other methods
 
-Alternatively, we can look at the scree plot and eigenvalues to determine the number of factors. For this we can use the *scree* function from the *psych* package.
+Alternatively, we can perform a parallel analysis to determine the number of factors. For this we can use the *parallel* function from the *nFactors* package.
+
+```{r}
+library(nFactors)
+eigenvalues <- eigen(correlation_matrix)
+parallelAnalysis <- parallel(subject = nrow(data), var = ncol(data), rep = 100, cent = .05)
+nscree <- nScree(eigenvalues$values, aparallel = parallelAnalysis$eigen$qevpea)
+plotnScree(nscree)
+```
+
+The Kaiser criterion recommends to drop all factors with an eigenvalue < 1. From this analysis we would thus also conclude that a 3-factor structure is appropriate for the data. The parallel analysis comes to the same conclusion. 
+
+Let's now take a look at the factor loadings, using the *fa* function from the *psych* package.
 
 ```{r}
 library(psych)
-scree(data, pc = FALSE)
+efa <- fa(data, nfactors = 3, rotate = "varimax")
+efa$loadings
 ```
 
-The Kaiser criterion recommends to drop all factors with an eigenvalue < 1. From this analysis we would thus conclude that a 1-factor structure is appropriate for the data. **TODO: Maybe some interpretation on why this differs**
+Looking at the items with the highest loadings on each factor, we can recover the originally proposed structure. Items 4, 5, and 6, load strongest on factor 1. Items 7, 8 and 9 load strongest on Factor 2. Only for factor 3 the conclusion is less clear than from the EGA. While items 1, 2, and 3 do have the highest loadings, item 9 also has a reasonably high loading on this factor.
 
 ## References
 
@@ -91,5 +111,7 @@ Golino, H. F., & Epskamp, S. (2017). Exploratory graph analysis: A new approach 
 
 Golino, H., & Christensen, A. P. (2021). EGAnet: Exploratory Graph Analysis – A framework for estimating the number
   of dimensions in multivariate data using network psychometrics. R package version 0.9.9.
+  
+Holzinger, K. J., & Swineford, F. (1939). A study in factor analysis: The stability of a bi-factor solution. *Supplementary          educational monographs*.
   
 
